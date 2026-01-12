@@ -1,11 +1,8 @@
 package http
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,10 +68,6 @@ func (h *Handler) ListEmployees(w http.ResponseWriter) {
 }
 
 func (h *Handler) CreateNewEmployee(w http.ResponseWriter, r *http.Request) {
-	body, _ := io.ReadAll(r.Body)
-	log.Println(string(body))
-	r.Body = io.NopCloser(bytes.NewBuffer(body))
-
 	var u model.Employee
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
