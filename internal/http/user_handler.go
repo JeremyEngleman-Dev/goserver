@@ -49,8 +49,10 @@ func (h *Handler) Employee(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("COntent-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(user)
+	case http.MethodDelete:
+		h.DeleteEmployee(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -82,4 +84,25 @@ func (h *Handler) CreateNewEmployee(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(u)
+}
+
+func (h *Handler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/employees/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusNotFound)
+		return
+	}
+
+	err = h.repo.DeleteEmployeeByID(id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

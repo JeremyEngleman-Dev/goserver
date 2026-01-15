@@ -82,3 +82,24 @@ func (r *Repository) CreateEmployee(u *model.Employee) error {
 	u.ID, _ = result.LastInsertId()
 	return nil
 }
+
+func (r *Repository) DeleteEmployeeByID(id int64) error {
+	result, err := r.db.Exec(
+		`DELETE FROM users WHERE id = ?`,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
