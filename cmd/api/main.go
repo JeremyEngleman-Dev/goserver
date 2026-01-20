@@ -31,8 +31,10 @@ func main() {
 	handler := httpHandler.NewHandler(repo)
 
 	// Establish endpoints
-	http.HandleFunc("/employees", handler.Employees)
-	http.HandleFunc("/employees/", handler.Employee)
+	http.HandleFunc("GET 	/employees", handler.ListEmployees)
+	http.HandleFunc("POST 	/employees", handler.CreateEmployee)
+	http.HandleFunc("GET 	/employees/", handler.GetEmployee)
+	http.HandleFunc("DELETE /employees/", handler.DeleteEmployee)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := "Welcome"
