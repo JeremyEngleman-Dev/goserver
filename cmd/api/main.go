@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"example/goserver/internal/db"
 	httpHandler "example/goserver/internal/http"
@@ -18,8 +20,11 @@ func main() {
 	}
 	defer database.Close()
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	repo := repository.NewRepository(database)
-	if err := repo.CreateTable(); err != nil {
+	if err := repo.CreateTable(ctx); err != nil {
 		log.Fatal(err)
 	}
 
@@ -34,7 +39,14 @@ func main() {
 		json.NewEncoder(w).Encode(path)
 	})
 
+	srv := &http.Server{
+		Addr:         ":8080",
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
 	// Start server
 	log.Println("Server starting on port 8080...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(srv.ListenAndServe())
 }

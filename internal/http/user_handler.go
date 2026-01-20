@@ -22,7 +22,7 @@ func NewHandler(repo *repository.Repository) *Handler {
 func (h *Handler) Employees(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		h.ListEmployees(w)
+		h.ListEmployees(w, r)
 	case http.MethodPost:
 		h.CreateNewEmployee(w, r)
 	default:
@@ -33,6 +33,8 @@ func (h *Handler) Employees(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Employee(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
+		ctx := r.Context()
+
 		idStr := strings.TrimPrefix(r.URL.Path, "/employees/")
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
@@ -40,7 +42,7 @@ func (h *Handler) Employee(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user, err := h.repo.GetEmployeeByID(id)
+		user, err := h.repo.GetEmployeeByID(ctx, id)
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
 				http.Error(w, "not found", http.StatusNotFound)
@@ -58,8 +60,11 @@ func (h *Handler) Employee(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) ListEmployees(w http.ResponseWriter) {
-	users, err := h.repo.ListEmployees()
+// Helper functions
+
+func (h *Handler) ListEmployees(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	users, err := h.repo.ListEmployees(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -70,13 +75,15 @@ func (h *Handler) ListEmployees(w http.ResponseWriter) {
 }
 
 func (h *Handler) CreateNewEmployee(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	var u model.Employee
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.repo.CreateEmployee(&u); err != nil {
+	if err := h.repo.CreateEmployee(ctx, &u); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -87,6 +94,8 @@ func (h *Handler) CreateNewEmployee(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	idStr := strings.TrimPrefix(r.URL.Path, "/employees/")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -94,7 +103,7 @@ func (h *Handler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.repo.DeleteEmployeeByID(id)
+	err = h.repo.DeleteEmployeeByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			http.Error(w, "not found", http.StatusNotFound)

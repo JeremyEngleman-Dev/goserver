@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 
@@ -15,19 +16,20 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) CreateTable() error {
-	_, err := r.db.Exec(`
-		CREATE TABLE IF NOT EXISTS users (
+func (r *Repository) CreateTable(ctx context.Context) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
 			age INTEGER NOT NULL
-		);
-	`)
+		);`,
+	)
 	return err
 }
 
-func (r *Repository) ListEmployees() ([]model.Employee, error) {
-	rows, err := r.db.Query(`SELECT id, name, age FROM users`)
+func (r *Repository) ListEmployees(ctx context.Context) ([]model.Employee, error) {
+	rows, err := r.db.QueryContext(ctx, `SELECT id, name, age FROM users`)
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +53,11 @@ func (r *Repository) ListEmployees() ([]model.Employee, error) {
 
 var ErrNotFound = errors.New("record not found")
 
-func (r *Repository) GetEmployeeByID(id int64) (*model.Employee, error) {
+func (r *Repository) GetEmployeeByID(ctx context.Context, id int64) (*model.Employee, error) {
 	var u model.Employee
 
-	err := r.db.QueryRow(
+	err := r.db.QueryRowContext(
+		ctx,
 		`SELECT id, name, age FROM users WHERE id = ?`,
 		id,
 	).Scan(&u.ID, &u.Name, &u.Age)
@@ -69,8 +72,9 @@ func (r *Repository) GetEmployeeByID(id int64) (*model.Employee, error) {
 	return &u, nil
 }
 
-func (r *Repository) CreateEmployee(u *model.Employee) error {
-	result, err := r.db.Exec(
+func (r *Repository) CreateEmployee(ctx context.Context, u *model.Employee) error {
+	result, err := r.db.ExecContext(
+		ctx,
 		`INSERT INTO users (name, age) VALUES (?, ?)`,
 		u.Name,
 		u.Age,
@@ -83,8 +87,9 @@ func (r *Repository) CreateEmployee(u *model.Employee) error {
 	return nil
 }
 
-func (r *Repository) DeleteEmployeeByID(id int64) error {
-	result, err := r.db.Exec(
+func (r *Repository) DeleteEmployeeByID(ctx context.Context, id int64) error {
+	result, err := r.db.ExecContext(
+		ctx,
 		`DELETE FROM users WHERE id = ?`,
 		id,
 	)
